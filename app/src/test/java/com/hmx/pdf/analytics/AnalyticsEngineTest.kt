@@ -174,7 +174,8 @@ class AnalyticsEngineTest {
             override fun ingest(i: String, p: String): Boolean = throw RuntimeException("offline")
             override fun revoke(i: String, a: String): RevokeVerification = throw RuntimeException("offline")
         }
-        val (engine, storage, _) = engine(transport = transport)
+        val storage = MemoryAnalyticsStorage()
+        val engine = AnalyticsEngine(storage, transport, true, app)
         engine.grantConsent()
         engine.track("pdf_open", "pdf")
         assertEquals(AnalyticsEngine.Flush.RegistrationPending, engine.flush())
