@@ -60,6 +60,11 @@ class ReportRequestBuilderTest {
         ReportRequestBuilder.build(draft, "short", "2.1.1", 21)
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsInstallIdWithUnsupportedCharacters() {
+        ReportRequestBuilder.build(draft, "hmx install id with spaces", "2.1.1", 21)
+    }
+
     @Test
     fun truncatesUserText() {
         val long = "x".repeat(9000)

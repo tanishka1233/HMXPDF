@@ -8,26 +8,17 @@ class RemoteConfigRepository(private val context: Context) {
 
     fun fetch(appVersionCode: Int): RemoteConfigSnapshot? {
         if (!BackendConfig.enabled) return null
-        var attempt = 1
-        while (true) {
-            val result = HttpJson.request(
-                url = RemoteConfigRequestBuilder.url(BackendConfig.functionsBaseUrl, appVersionCode),
-                method = "GET",
-                apiKey = BackendConfig.publishableKey,
-            )
-            if (result is HttpResult.Success) {
-                val snapshot = RemoteConfigParser.parse(result.body)
-                if (snapshot != null) {
-                    prefs.edit().putString(LAST_GOOD, result.body).apply()
-                    return snapshot
+        val url = RemoteConfigRequestBuilder.url(BackendConfig.functionsBaseUrl, appVersionCode)
+        return RetryLoop.execute(
+            request = { HttpJson.request(url, "GET", BackendConfig.publishableKey) },
+            decode = { raw ->
+                RemoteConfigParser.parse(raw)?.let { snapshot ->
+                    prefs.edit().putString(LAST_GOOD, raw).apply()
+                    snapshot
                 }
-                return lastKnownGood()
-            }
-            val failure = result as HttpResult.Failure
-            if (!RetryPolicy.shouldRetry(attempt, failure.status)) return lastKnownGood()
-            Thread.sleep(RetryPolicy.backoffMillis(attempt))
-            attempt += 1
-        }
+            },
+            fallback = { lastKnownGood() },
+        )
     }
 
     fun lastKnownGood(): RemoteConfigSnapshot? =
@@ -80,22 +71,20 @@ class DiagnosticsRepository(private val context: Context) {
             return SubmitResult(false, e.message ?: "The report could not be prepared.")
         }
 
-        var attempt = 1
-        while (true) {
-            val result = HttpJson.request(
-                url = "${BackendConfig.functionsBaseUrl}/submit-report",
-                method = "POST",
-                apiKey = BackendConfig.publishableKey,
-                body = body,
-            )
-            if (result is HttpResult.Success) return SubmitResult(true, "Report sent. Thank you.")
-            val failure = result as HttpResult.Failure
-            if (!RetryPolicy.shouldRetry(attempt, failure.status)) {
-                return SubmitResult(false, "Report could not be sent. Your documents are unaffected.")
-            }
-            Thread.sleep(RetryPolicy.backoffMillis(attempt))
-            attempt += 1
-        }
+        return RetryLoop.execute(
+            request = {
+                HttpJson.request(
+                    url = "${BackendConfig.functionsBaseUrl}/submit-report",
+                    method = "POST",
+                    apiKey = BackendConfig.publishableKey,
+                    body = body,
+                )
+            },
+            decode = { SubmitResult(true, "Report sent. Thank you.") },
+            fallback = {
+                SubmitResult(false, "Report could not be sent. Your documents are unaffected.")
+            },
+        )
     }
 
     private companion object {

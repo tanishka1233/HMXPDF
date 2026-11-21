@@ -25,7 +25,8 @@ object ReportRequestBuilder {
         appVersionCode: Int,
     ): String {
         require(draft.reportType in ALLOWED_TYPES) { "report_type is not allowlisted" }
-        require(installId.length in 8..128) { "install id must be 8-128 characters" }
+        // Mirrors the server's install_id rule so a tampered preference fails locally.
+        require(installId.matches(Regex("^[A-Za-z0-9._:-]{8,128}$"))) { "install id has an invalid format" }
         return buildJsonObject {
             put("install_id", installId)
             put("app_version", appVersion.take(40))
