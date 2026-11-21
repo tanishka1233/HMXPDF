@@ -60,6 +60,7 @@ open class MainActivity : ComponentActivity() {
         // Staging builds refresh the published remote configuration once per launch.
         // Debug/release compile a disabled backend, so this is a no-op for production.
         if (com.hmx.pdf.backend.BackendConfig.enabled) {
+            com.hmx.pdf.analytics.Analytics.initialize(applicationContext)
             lifecycleScope.launch(Dispatchers.IO) {
                 com.hmx.pdf.backend.RemoteFlags.refresh(applicationContext)
             }
@@ -186,4 +187,13 @@ open class MainActivity : ComponentActivity() {
             supportedExtension
     }
 
+    override fun onStart() {
+        super.onStart()
+        com.hmx.pdf.analytics.Analytics.onForeground()
+    }
+
+    override fun onStop() {
+        com.hmx.pdf.analytics.Analytics.onBackground()
+        super.onStop()
+    }
 }

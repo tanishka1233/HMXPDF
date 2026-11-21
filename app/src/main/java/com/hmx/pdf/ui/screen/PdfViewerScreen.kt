@@ -2750,6 +2750,7 @@ fun PdfViewerScreen(
                         ).show()
                         return@launch
                     }
+                    com.hmx.pdf.analytics.Analytics.track("pdf_share", "pdf")
                     val (shareUri, mime) = payload
                     val many = shareMultiple
                     shareMultiple = emptyList()

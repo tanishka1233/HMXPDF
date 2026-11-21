@@ -39,6 +39,7 @@ class ScanViewModel : ViewModel() {
                     isScanning = false
                 )
             }
+            com.hmx.pdf.analytics.Analytics.track("scan_use", "scan")
         }
     }
 

@@ -107,6 +107,7 @@ class HtmlToPdfViewModel : ViewModel() {
                         name = fileName, uriString = outUri.toString(),
                         timestamp = System.currentTimeMillis(), sizeBytes = 0
                     ))
+                    com.hmx.pdf.analytics.Analytics.track("url_to_pdf_use", "url_to_pdf")
                     _uiState.update { it.copy(isProcessing = false, lastOutputUri = outUri, resultMessage = "PDF created · saved to $saveLabel") }
                 } else {
                     _uiState.update { it.copy(isProcessing = false, errorMessage = context.getString(com.hmx.pdf.R.string.html_to_pdf_create_failed)) }

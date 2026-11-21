@@ -121,12 +121,14 @@ class MergePdfViewModel(private val mergePdfUseCase: MergePdfUseCase) : ViewMode
                     saveLocationLabel = saveLabel,
                     resultMessage = context.getString(R.string.merge_success, uris.size, outName, saveLabel)
                 )
+                com.hmx.pdf.analytics.Analytics.track("pdf_merge", "pdf")
 
                 if (GitHubStarPromptManager.recordSuccess(context)) {
                     StarPromptEventBus.requestPrompt()
                 }
             } catch (e: Exception) {
                 GitHubStarPromptManager.recordFailure(context)
+                com.hmx.pdf.analytics.Analytics.track("operation_failed", "pdf", "io")
                 _uiState.value = _uiState.value.copy(
                     isMerging = false,
                     errorMessage = context.getString(R.string.merge_failed)

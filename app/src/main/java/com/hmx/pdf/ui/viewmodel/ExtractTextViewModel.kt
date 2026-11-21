@@ -123,6 +123,7 @@ class ExtractTextViewModel(
             }
             lastOcrWordsByPage = wordsByPage
             val trimmed = result.trim()
+            if (trimmed.isNotEmpty()) com.hmx.pdf.analytics.Analytics.track("ocr_use", "ocr")
             _uiState.value = _uiState.value.copy(
                 isRecognizing = false,
                 recognizeProgress = null,

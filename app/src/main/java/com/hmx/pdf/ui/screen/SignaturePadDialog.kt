@@ -204,6 +204,7 @@ fun SignaturePadDialog(
             runCatching {
                 com.hmx.pdf.data.repository.SignatureManager
                     .saveSignature(context, bitmap, trimmedName)
+                com.hmx.pdf.analytics.Analytics.track("signature_use", "signature")
             }
             showNamePrompt = false
             pendingSignature = null

@@ -175,12 +175,14 @@ class SplitPdfViewModel(private val splitter: PdfSplitter) : ViewModel() {
                     saveLocationLabel = saveLabel,
                     resultMessage = context.getString(R.string.split_success, results.size, saveLabel)
                 )
+                com.hmx.pdf.analytics.Analytics.track("pdf_split", "pdf")
 
                 if (GitHubStarPromptManager.recordSuccess(context)) {
                     StarPromptEventBus.requestPrompt()
                 }
             } catch (e: Exception) {
                 GitHubStarPromptManager.recordFailure(context)
+                com.hmx.pdf.analytics.Analytics.track("operation_failed", "pdf", "io")
                 _uiState.value = _uiState.value.copy(
                     isSplitting = false,
                     errorMessage = context.getString(R.string.split_failed)

@@ -990,6 +990,7 @@ class PdfViewerViewModel(private val openPdfUseCase: OpenPdfUseCase) : ViewModel
                     exportMessage = context.getString(R.string.viewer_save_success, outputName),
                     lastExportedUri = createdUri
                 )
+                com.hmx.pdf.analytics.Analytics.track("pdf_export", "pdf")
                 if (GitHubStarPromptManager.recordSuccess(context)) {
                     StarPromptEventBus.requestPrompt()
                 }
@@ -999,6 +1000,7 @@ class PdfViewerViewModel(private val openPdfUseCase: OpenPdfUseCase) : ViewModel
                 outputUri?.let { runCatching { context.contentResolver.delete(it, null, null) } }
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 GitHubStarPromptManager.recordFailure(context)
+                com.hmx.pdf.analytics.Analytics.track("operation_failed", "pdf", "io")
                 _uiState.value = _uiState.value.copy(
                     isExporting = false,
                     // Covers OutOfMemoryError and provider failures, not just checked exceptions:

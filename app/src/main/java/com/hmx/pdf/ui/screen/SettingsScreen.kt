@@ -235,6 +235,7 @@ fun SettingsScreen(
         PageOffice -> stringResource(R.string.office_engine_title)
         PageGlass -> stringResource(R.string.settings_glass)
         PageDiagnostics -> "Diagnostics (staging)"
+        PageAnalytics -> "Analytics (staging)"
         else -> stringResource(R.string.settings_title)
     }
     Box(Modifier.fillMaxSize()) {
@@ -304,6 +305,7 @@ fun SettingsScreen(
                         if (BackendConfig.enabled) {
                             SettingsDivider(isLight)
                             SettingsNavRow(Icons.Rounded.FileCopy, LiquidGlassColors.Purple, "Diagnostics (staging)", null, ink, sub) { page = PageDiagnostics }
+                            SettingsNavRow(Icons.Rounded.BarChart, LiquidGlassColors.Purple, "Analytics (staging)", null, ink, sub) { page = PageAnalytics }
                         }
                     }
                     SettingsSection(backdrop, uiSensor, entrance.sectionFade(3), padding = 8.dp, gap = 0.dp) {
@@ -601,6 +603,11 @@ fun SettingsScreen(
                     BasicText(stringResource(R.string.settings_open_source), style = TextStyle(sub.copy(0.7f), 11.sp, textAlign = TextAlign.Center))
                 }
 
+                if (p == PageAnalytics) SettingsSection(backdrop, uiSensor, Modifier, padding = 16.dp) {
+                    SettingsSectionHeader(Icons.Rounded.BarChart, "Analytics (staging)", ink)
+                    AnalyticsSettingsSection()
+                }
+
                 if (p == PageDiagnostics) SettingsSection(backdrop, uiSensor, Modifier, padding = 16.dp) {
                     SettingsSectionHeader(Icons.Rounded.FileCopy, "Diagnostics (staging)", ink)
                     DiagnosticsSettingsSection()
@@ -678,6 +685,7 @@ private const val PageLicenses = 6
 private const val PageOffice = 7
 private const val PageGlass = 8
 private const val PageDiagnostics = 9
+private const val PageAnalytics = 10
 
 /**
  * Settings -> Liquid Glass: kyant's Glass Playground knobs, app-wide. A live preview chip sits over a

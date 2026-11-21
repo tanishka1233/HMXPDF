@@ -243,6 +243,7 @@ class DocxEditorViewModel : ViewModel() {
                 meta = Meta(fileName = name, fileUri = local, sourceUri = uri, isLoading = false, error = "Couldn't read this document.")
                 return@launch
             }
+            com.hmx.pdf.analytics.Analytics.track("docx_open", "docx")
             pkg = parsed.first
             doc = parsed.second
             saved = parsed.second
@@ -1544,6 +1545,7 @@ class DocxEditorViewModel : ViewModel() {
             meta = meta.copy(saving = false)
             if (result is SaveResult.Saved) {
                 recordSaved(capture)
+                com.hmx.pdf.analytics.Analytics.track("docx_edit", "docx")
                 if (!dirty && checkpointBeforeSave != null) {
                     withContext(Dispatchers.IO) {
                         EditorCheckpointStore.clearIfCurrent(context, checkpointBeforeSave)
@@ -1677,6 +1679,7 @@ class DocxEditorViewModel : ViewModel() {
                     if (src == null) null
                     else runCatching { com.hmx.pdf.utils.UniversalDocumentConverter.convertToPdf(context, src) }.getOrNull()
                 }
+                if (out != null) com.hmx.pdf.analytics.Analytics.track("docx_export", "docx")
                 onDone(out)
             }
         }

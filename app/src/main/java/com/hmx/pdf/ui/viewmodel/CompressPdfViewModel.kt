@@ -176,6 +176,7 @@ class CompressPdfViewModel(private val compressPdfUseCase: CompressPdfUseCase) :
                     saveLocationLabel = saveLabel,
                     resultMessage = context.getString(R.string.compression_success, origKb, compKb, reduction, saveLabel)
                 )
+                com.hmx.pdf.analytics.Analytics.track("pdf_compress", "pdf")
 
                 if (GitHubStarPromptManager.recordSuccess(context)) {
                     StarPromptEventBus.requestPrompt()
