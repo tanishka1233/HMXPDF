@@ -13,7 +13,7 @@ on:
         default: false
         type: boolean
       verify_staging:
-        description: 'Compile and unit-test the staging backend variant (no signing, no release)'
+        description: 'Compile the staging backend variant (no signing, no release)'
         required: false
         default: false
         type: boolean
@@ -82,11 +82,11 @@ jobs:
           cache: gradle
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: List staging tasks (diagnostic)
-        run: ./gradlew :app:tasks --all | grep -i staging || true
-      - name: JVM unit tests (all variants, includes staging)
+      # AGP only creates unit-test tasks for debug/release, so the staging variant is
+      # verified by compiling it. Its JVM logic tests run in the `build` job.
+      - name: Compile staging variant (includes staging BuildConfig + tests compile)
         run: >
-          ./gradlew :app:test
+          ./gradlew :app:compilePlayStagingKotlin :app:assemblePlayStaging
           --stacktrace
           -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
           -Pkotlin.daemon.jvmargs=-Xmx4g
