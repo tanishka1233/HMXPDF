@@ -26,6 +26,21 @@ class RemoteConfigParserTest {
     }
 
     @Test
+    fun parsesLiveStagingPublishedDocument() {
+        // Captured from GET /functions/v1/get-app-config on the staging project.
+        val live = """{"data":{"version":3,"config":{"limits":{"max_pages":500,"max_document_mb":200},"features":{"ocr":true,"form_fill":true,"dark_pages":true,"url_to_pdf":true,"annotations":true,"image_editor":true,"office_engine":true},"announcement":{"url":"","enabled":false,"message":""},"schema_version":1,"min_supported_app_version_code":6},"published_at":"2026-11-21T10:59:33.111676+00:00","compatible":true,"min_supported_app_version_code":6}}"""
+        val snapshot = RemoteConfigParser.parse(live)
+        assertNotNull(snapshot)
+        assertEquals(3L, snapshot!!.version)
+        assertTrue(snapshot.compatible)
+        assertTrue(FeatureFlags.isEnabled(snapshot, FeatureFlags.URL_TO_PDF))
+        assertTrue(FeatureFlags.isEnabled(snapshot, FeatureFlags.OFFICE_ENGINE))
+        assertTrue(FeatureFlags.isEnabled(snapshot, FeatureFlags.FORM_FILL))
+        assertEquals(500, snapshot.config.limits.maxPages)
+        assertEquals(200, snapshot.config.limits.maxDocumentMb)
+    }
+
+    @Test
     fun rejectsMalformedOrUnknownDocuments() {
         assertNull(RemoteConfigParser.parse("not json"))
         assertNull(RemoteConfigParser.parse("""{"data":{"version":1,"config":{"schema_version":2}}}"""))
