@@ -50,7 +50,7 @@ This is a separate screen, flag, identity and prefs file from diagnostic reporti
 2. Immediately: `analytics_enabled = false`, the in-memory/queue JSON is cleared, the session ID is cleared, and no further `track()` call can append an event.
 3. POST `/analytics-consent` with `action=revoke` or `action=delete`.
 4. The database function deletes identity, raw events and daily activity **and then verifies** no row remains. Only a `verified: true` response is reported as success.
-5. If verification cannot be obtained, the local ID is kept only in `analytics_pending_deletion` for a retry on next launch; the UI reports "pending", never "deleted".
+5. If verification cannot be obtained, the local ID is retained for a retry on next launch (flagged in `analytics_pending_deletion`) but consent stays off, so no further event can be attributed; the UI reports "pending", never "deleted".
 
 A declining user never has an analytics ID. The app functions normally with analytics on, off, online or offline.
 
