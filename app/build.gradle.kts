@@ -96,6 +96,9 @@ android {
         // production endpoint is not present in any build type's BuildConfig.
         create("staging") {
             initWith(getByName("debug"))
+            // Library modules (backdrop, pdf-core, ocr-core, office_engine) only define
+            // debug/release. Consume their debug variants for this build type.
+            matchingFallbacks += listOf("debug")
             // initWith copies debug before its ProGuard block runs; restate it so the
             // staging variant dexes exactly like debug on API 23.
             isMinifyEnabled = true
