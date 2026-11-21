@@ -5,7 +5,7 @@
 - **Date:** 2026-11-21
 - **Android repo:** `https://github.com/tanishka1233/HMXPDF.git`
 - **Branch:** `feature/hmxpdf-backend-integration`
-- **HEAD:** `232542e3afecae743c3ce736960020204fbb199f`
+- **Verified code HEAD:** `232542e3afecae743c3ce736960020204fbb199f` (this report is a later docs-only commit)
 - **Staging project:** `hwwnksxfrllkrqonngob` (`ap-northeast-1`)
 - **Production project:** `qjhlzsopnwozpsdosbjt` — **not accessed or modified in this phase**
 - **Protected repo:** `https://github.com/HMXPANEL/HMXPDF.git` — **not accessed**
