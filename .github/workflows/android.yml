@@ -43,6 +43,27 @@ jobs:
           --stacktrace
           -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8"
           -Pkotlin.daemon.jvmargs=-Xmx4g
+      - name: Summarize app unit tests
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          total = fail = err = skip = 0
+          for path in sorted(glob.glob('app/build/test-results/testPlayDebugUnitTest/*.xml')):
+              root = ET.parse(path).getroot()
+              n = int(root.get('tests', 0)); f = int(root.get('failures', 0))
+              e = int(root.get('errors', 0)); s = int(root.get('skipped', 0))
+              total += n; fail += f; err += e; skip += s
+              print(f"{root.get('name')}: tests={n} failures={f} errors={e} skipped={s}")
+          print(f"TOTAL tests={total} failures={fail} errors={err} skipped={skip}")
+          PY
+      - name: Upload app unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-unit-test-results
+          path: app/build/test-results/testPlayDebugUnitTest/*.xml
+          if-no-files-found: ignore
       - name: Run Android lint
         run: >
           ./gradlew lintPlayDebug
