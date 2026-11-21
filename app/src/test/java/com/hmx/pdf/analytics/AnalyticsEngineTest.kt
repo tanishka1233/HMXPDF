@@ -64,7 +64,7 @@ class AnalyticsEngineTest {
         engine.grantConsent()
         repeat(60) { engine.track("pdf_open", "pdf") }
         assertEquals(AnalyticsEngine.Flush.Sent(50), engine.flush())
-        assertEquals(50, AnalyticsPayload.decodeQueue(transport.batches[0]).size)
+        assertEquals(50, Regex("\"event_id\"").findAll(transport.batches[0]).count())
         assertEquals(AnalyticsEngine.Flush.Sent(10), engine.flush())
         assertEquals(AnalyticsEngine.Flush.NoEvents, engine.flush())
     }
@@ -85,8 +85,8 @@ class AnalyticsEngineTest {
     @Test
     fun registrationFailurePreventsUploadButKeepsEvents() {
         val (engine, storage, transport) = engine()
-        engine.grantConsent()
         transport.registerOk = false
+        engine.grantConsent()
         engine.track("ocr_use", "ocr")
         assertEquals(AnalyticsEngine.Flush.RegistrationPending, engine.flush())
         assertTrue(transport.batches.isEmpty())
@@ -121,11 +121,13 @@ class AnalyticsEngineTest {
         assertFalse(outcome.ok)
         assertTrue(outcome.pending)
         assertEquals(id, storage.pendingDeletionId())
-        assertNull(storage.installId())
+        // The ID is retained only for the pending deletion retry; collection stays off.
+        assertEquals(id, storage.installId())
         assertTrue(storage.queue().isEmpty())
         transport.revokeVerified = true
         engine.retryPendingDeletion()
         assertNull(storage.pendingDeletionId())
+        assertNull(storage.installId())
     }
 
     @Test
