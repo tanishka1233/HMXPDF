@@ -65,6 +65,16 @@ class HtmlToPdfViewModel : ViewModel() {
     fun convert(context: Context) {
         if (_uiState.value.isProcessing) return
         val mode = _uiState.value.mode
+        // Server-controlled kill switch, staging builds only. With no published
+        // configuration the flag defaults to enabled, so offline users are unaffected.
+        if (
+            mode == WebToPdfMode.URL &&
+            com.hmx.pdf.backend.BackendConfig.enabled &&
+            !com.hmx.pdf.backend.RemoteFlags.isEnabled(com.hmx.pdf.backend.FeatureFlags.URL_TO_PDF)
+        ) {
+            _uiState.update { it.copy(errorMessage = "This tool is temporarily unavailable. Please try again later.") }
+            return
+        }
         val rawUrl = _uiState.value.url.trim()
         if (mode == WebToPdfMode.URL && rawUrl.isBlank()) {
             _uiState.update { it.copy(errorMessage = context.getString(com.hmx.pdf.R.string.html_to_pdf_need_url)) }

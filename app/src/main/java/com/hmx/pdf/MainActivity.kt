@@ -57,6 +57,14 @@ open class MainActivity : ComponentActivity() {
             "clear-pdf-cache-cleanup"
         ).start()
 
+        // Staging builds refresh the published remote configuration once per launch.
+        // Debug/release compile a disabled backend, so this is a no-op for production.
+        if (com.hmx.pdf.backend.BackendConfig.enabled) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                com.hmx.pdf.backend.RemoteFlags.refresh(applicationContext)
+            }
+        }
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Belt-and-suspenders against the translucent scrim Android can draw behind the nav bar
         // (API 29-34; reported as a "grey band" around it on some OEM skins/Android versions even

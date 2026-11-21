@@ -37,6 +37,34 @@ class RemoteConfigParserTest {
     }
 
     @Test
+    fun incompatibleAppFallsBackToDefaults() {
+        val doc = "{\"data\":{\"version\":9,\"compatible\":false,\"config\":{" +
+            "\"schema_version\":1,\"min_supported_app_version_code\":999," +
+            "\"features\":{\"url_to_pdf\":false,\"ocr\":true}}}}"
+        val snapshot = RemoteConfigParser.parse(doc)
+        assertNotNull(snapshot)
+        assertFalse(snapshot!!.compatible)
+        // A stale app must not apply server flags at all.
+        assertTrue(FeatureFlags.isEnabled(snapshot, FeatureFlags.URL_TO_PDF, default = true))
+        assertFalse(FeatureFlags.isEnabled(snapshot, FeatureFlags.OCR, default = false))
+    }
+
+    @Test
+    fun remoteFlagsStayOnWhenNoConfigurationWasFetched() {
+        RemoteFlags.setForTest(null)
+        assertTrue(RemoteFlags.isEnabled(FeatureFlags.OCR, default = true))
+        assertFalse(RemoteFlags.isEnabled(FeatureFlags.OCR, default = false))
+    }
+
+    @Test
+    fun remoteFlagsApplyPublishedValues() {
+        RemoteFlags.setForTest(RemoteConfigParser.parse(valid))
+        assertTrue(RemoteFlags.isEnabled(FeatureFlags.URL_TO_PDF))
+        assertFalse(RemoteFlags.isEnabled(FeatureFlags.OCR, default = true))
+        RemoteFlags.setForTest(null)
+    }
+
+    @Test
     fun defaultsAreSafeWhenNoConfigExists() {
         assertFalse(FeatureFlags.isEnabled(null, FeatureFlags.IMAGE_EDITOR))
         assertTrue(FeatureFlags.isEnabled(null, FeatureFlags.OCR, default = true))

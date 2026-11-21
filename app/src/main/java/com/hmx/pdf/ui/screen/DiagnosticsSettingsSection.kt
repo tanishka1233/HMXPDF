@@ -24,8 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmx.pdf.backend.AppInfo
 import com.hmx.pdf.backend.DiagnosticsRepository
-import com.hmx.pdf.backend.RemoteConfigRepository
+import com.hmx.pdf.backend.FeatureFlags
 import com.hmx.pdf.backend.RemoteConfigSnapshot
+import com.hmx.pdf.backend.RemoteFlags
 import com.hmx.pdf.backend.ReportDraft
 import com.hmx.pdf.backend.ReportRequestBuilder
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,6 @@ import java.util.Locale
 fun DiagnosticsSettingsSection(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val diagnostics = remember(context) { DiagnosticsRepository(context) }
-    val configRepository = remember(context) { RemoteConfigRepository(context) }
     var consent by remember { mutableStateOf(diagnostics.consentEnabled) }
     var snapshot by remember { mutableStateOf<RemoteConfigSnapshot?>(null) }
     var reportType by remember { mutableStateOf(ReportRequestBuilder.ALLOWED_TYPES.first()) }
@@ -50,7 +50,8 @@ fun DiagnosticsSettingsSection(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        snapshot = withContext(Dispatchers.IO) { configRepository.fetch(AppInfo.versionCode(context)) }
+        snapshot = withContext(Dispatchers.IO) { RemoteFlags.refresh(context) }
+            ?: RemoteFlags.current()
     }
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -72,13 +73,31 @@ fun DiagnosticsSettingsSection(modifier: Modifier = Modifier) {
                 },
             )
         }
-        Text("Published configuration: v${snapshot?.version ?: "unavailable"}", fontSize = 12.sp)
+        Text(
+            if (snapshot == null) "Published configuration: unavailable (using built-in defaults)"
+            else if (!snapshot!!.compatible) "Published configuration: v${snapshot!!.version} (update required)"
+            else "Published configuration: v${snapshot!!.version}",
+            fontSize = 12.sp,
+        )
         val announcement = snapshot?.config?.announcement
         if (announcement != null && announcement.enabled && announcement.message.isNotBlank()) {
             Text("Announcement: ${announcement.message}", fontSize = 12.sp)
         }
-        val enabledFlags = snapshot?.config?.features?.count { it.value == true } ?: 0
-        Text("Remote feature flags enabled: $enabledFlags", fontSize = 12.sp)
+        val flags = listOf(
+            FeatureFlags.URL_TO_PDF,
+            FeatureFlags.OFFICE_ENGINE,
+            FeatureFlags.OCR,
+            FeatureFlags.IMAGE_EDITOR,
+            FeatureFlags.DARK_PAGES,
+            FeatureFlags.ANNOTATIONS,
+            FeatureFlags.FORM_FILL,
+        )
+        Text(
+            "Remote feature flags: " + flags.joinToString { flag ->
+                "$flag=" + if (RemoteFlags.isEnabled(flag)) "on" else "off"
+            },
+            fontSize = 12.sp,
+        )
         Text(
             "Each confirmed report includes: install id (report request only), app version, " +
                 "your title and description, Android API level and locale. " +

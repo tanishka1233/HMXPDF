@@ -32,12 +32,18 @@ data class ConfigEnvelope(
     val version: Long = 0,
     val config: RemoteConfigDto? = null,
     @SerialName("published_at") val publishedAt: String? = null,
+    /** Server verdict for the app version that asked. Absent means "not evaluated". */
+    val compatible: Boolean = true,
 )
 
 @Serializable
 data class ConfigResponse(val data: ConfigEnvelope? = null)
 
-data class RemoteConfigSnapshot(val version: Long, val config: RemoteConfigDto)
+data class RemoteConfigSnapshot(
+    val version: Long,
+    val config: RemoteConfigDto,
+    val compatible: Boolean = true,
+)
 
 /** Reads only the published configuration document. Unknown keys are ignored; malformed
  * documents are rejected rather than applied, so the caller can fall back safely. */
@@ -57,13 +63,13 @@ object RemoteConfigParser {
         if (config.schemaVersion != 1) return null
         if (config.minSupportedVersionCode !in 1..1_000_000_000) return null
         if (config.features.keys.any { it !in allowedFeatures }) return null
-        return RemoteConfigSnapshot(envelope.version, config)
+        return RemoteConfigSnapshot(envelope.version, config, envelope.compatible)
     }
 
     fun encode(snapshot: RemoteConfigSnapshot): String =
         json.encodeToString(
             ConfigResponse.serializer(),
-            ConfigResponse(ConfigEnvelope(snapshot.version, snapshot.config, null)),
+            ConfigResponse(ConfigEnvelope(snapshot.version, snapshot.config, null, snapshot.compatible)),
         )
 }
 
@@ -76,8 +82,10 @@ object FeatureFlags {
     const val ANNOTATIONS = "annotations"
     const val FORM_FILL = "form_fill"
 
-    fun isEnabled(snapshot: RemoteConfigSnapshot?, flag: String, default: Boolean = false): Boolean =
-        snapshot?.config?.features?.get(flag) ?: default
+    fun isEnabled(snapshot: RemoteConfigSnapshot?, flag: String, default: Boolean = false): Boolean {
+        if (snapshot == null || !snapshot.compatible) return default
+        return snapshot.config.features[flag] ?: default
+    }
 }
 
 /** No install identifier, no user identity, no device identity. */
