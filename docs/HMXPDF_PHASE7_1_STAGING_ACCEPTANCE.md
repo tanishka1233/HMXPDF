@@ -376,6 +376,8 @@ The staging manifest adds `INTERNET` and `ACCESS_NETWORK_STATE`, but the debug A
 | `sb_secret_` | **absent** |
 | Staging key | present |
 
+Production admin bundle (read-only check): production project ref present (2), staging project ref **absent** (0), `service_role` **absent**, `sb_secret_` **absent**. The two deployments use disjoint Supabase projects.
+
 ### 5.4 Production integrity
 
 - No production analytics functions.
