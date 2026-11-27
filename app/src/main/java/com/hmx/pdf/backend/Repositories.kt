@@ -71,6 +71,13 @@ class DiagnosticsRepository(private val context: Context) {
             return SubmitResult(false, e.message ?: "The report could not be prepared.")
         }
 
+        // One stable id per user-confirmed submission: safe retries can't create duplicates,
+        // and the request id lets us correlate safe structured logs (and server logs).
+        val submissionId = java.util.UUID.randomUUID().toString()
+        val requestId = java.util.UUID.randomUUID().toString()
+        val project = DiagnosticsTelemetry.projectRef(BackendConfig.functionsBaseUrl)
+        DiagnosticsTelemetry.started(project, submissionId, requestId, draft.reportType)
+
         return RetryLoop.execute(
             request = {
                 HttpJson.request(
@@ -78,11 +85,42 @@ class DiagnosticsRepository(private val context: Context) {
                     method = "POST",
                     apiKey = BackendConfig.publishableKey,
                     body = body,
+                    requestId = requestId,
+                    extraHeaders = mapOf("x-hmx-submission-id" to submissionId),
                 )
             },
-            decode = { SubmitResult(true, "Report sent. Thank you.") },
+            // Success ONLY when the backend proves a row was persisted (id + submitted_at).
+            decode = { raw ->
+                SubmitResponseParser.parseReportId(raw)?.let { reportId ->
+                    DiagnosticsTelemetry.persisted(project, submissionId, requestId, reportId)
+                    SubmitResult(
+                        ok = true,
+                        message = "Report sent. Reference ${reportId.take(8)}. Thank you.",
+                        reportId = reportId,
+                    )
+                }
+            },
             fallback = {
-                SubmitResult(false, "Report could not be sent. Your documents are unaffected.")
+                DiagnosticsTelemetry.failed(project, submissionId, requestId, "unconfirmed_or_rejected")
+                SubmitResult(false, "The report service did not confirm your report. Please try again. Your documents are unaffected.")
+            },
+            observe = { attempt, result ->
+                when (result) {
+                    is HttpResult.Success -> DiagnosticsTelemetry.attempt(
+                        project, submissionId, requestId, attempt, result.status,
+                        if (SubmitResponseParser.parseReportId(result.body) != null) "ok" else "unconfirmed_body",
+                    )
+                    is HttpResult.Failure -> DiagnosticsTelemetry.attempt(
+                        project, submissionId, requestId, attempt, result.status,
+                        when {
+                            result.status == null -> "transport"
+                            result.status == 429 -> "rate_limited"
+                            result.status in 500..599 -> "server_error"
+                            result.status in 400..499 -> "rejected"
+                            else -> "http_" + result.status
+                        },
+                    )
+                }
             },
         )
     }
@@ -93,4 +131,9 @@ class DiagnosticsRepository(private val context: Context) {
     }
 }
 
-data class SubmitResult(val ok: Boolean, val message: String)
+data class SubmitResult(
+    val ok: Boolean,
+    val message: String,
+    /** Persisted report id returned by the backend; present only when persistence is confirmed. */
+    val reportId: String? = null,
+)

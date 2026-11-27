@@ -113,6 +113,7 @@ fun GlassDialog(
     title: String?,
     modifier: Modifier = Modifier,
     dismissOnScrimTap: Boolean = true,
+    panelShadow: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -190,7 +191,7 @@ fun GlassDialog(
                         )
                     },
                     highlight = { Highlight.Plain },
-                    shadow = null,
+                    shadow = if (panelShadow) ({ Shadow(radius = 18.dp, color = Color.Black.copy(alpha = if (isLight) 0.18f else 0.42f)) }) else null,
                     onDrawSurface = { drawRect(containerColor) }
                 )
                 // Swallow taps so they don't reach the scrim.
