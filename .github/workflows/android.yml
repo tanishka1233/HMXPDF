@@ -114,9 +114,29 @@ jobs:
       - name: Upload staging APK
         uses: actions/upload-artifact@v4
         with:
-          name: hmx-pdf-staging-apk
+          name: hmxpdf-staging-apk
           path: app/build/outputs/apk/play/staging/*.apk
           if-no-files-found: error
+      - name: Inspect staging APK
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/play/staging -name '*.apk' -print -quit)
+          test -n "$APK"
+          echo "APK: $APK"
+          sha256sum "$APK"
+          echo "DEX strings must contain the staging endpoint and must not contain admin surfaces,"
+          echo "the production project ref or any server credential."
+          DEX_STRINGS=$(mktemp)
+          unzip -p "$APK" 'classes*.dex' | strings > "$DEX_STRINGS"
+          if grep -E 'qjhlzsopnwozpsdosbjt|hmxpdf-admin|admin_members|service_role|sb_secret_|SUPABASE_SERVICE|/admin/' "$DEX_STRINGS"; then
+            echo "::error title=Forbidden admin surface in staging APK::The APK contains an admin URL, admin route, production ref or server credential."
+            exit 1
+          fi
+          grep -q 'hwwnksxfrllkrqonngob.supabase.co' "$DEX_STRINGS" || {
+            echo "::error title=Missing staging endpoint::The staging APK does not contain the approved staging endpoint."
+            exit 1
+          }
+          echo "Staging APK inspection passed."
 
   release:
     # Tag pushes are the production path. Manual dispatch is only for a private

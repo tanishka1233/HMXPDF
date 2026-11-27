@@ -97,6 +97,16 @@
     <string name="settings_background">Background</string>
     <string name="settings_background_desc">Show the wallpaper image behind the app</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="privacy_prompt_title">Your privacy choices</string>
+    <string name="privacy_prompt_intro">HMX PDF works offline. Two optional programmes help us improve the app. Both are off unless you turn them on, and you can change them any time in Settings.</string>
+    <string name="privacy_prompt_diagnostics_title">Crash reports and diagnostics</string>
+    <string name="privacy_prompt_diagnostics_body">Send a report only when you choose to, with your description, app version, Android API level and locale. Never document contents, device model or location.</string>
+    <string name="privacy_prompt_analytics_title">Anonymous product insights</string>
+    <string name="privacy_prompt_analytics_body">Share allowlisted feature counts and session reliability with a random install ID. Never document contents, file names, paths, location or contact details.</string>
+    <string name="privacy_prompt_footnote">No choice is required to use HMX PDF. Not now keeps both off.</string>
+    <string name="privacy_prompt_not_now">Not now</string>
+    <string name="privacy_prompt_continue">Continue</string>
+    <string name="privacy_prompt_policy">Privacy policy</string>
     <string name="settings_version_label">Version</string>
     <string name="tool_extract_pages">Extract Pages</string>
     <string name="tool_extract_pages_sub">Pull pages into a new PDF</string>

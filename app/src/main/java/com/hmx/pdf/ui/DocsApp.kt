@@ -59,9 +59,15 @@ import androidx.compose.ui.util.lerp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.hmx.pdf.R
+import com.hmx.pdf.analytics.Analytics
+import com.hmx.pdf.backend.BackendConfig
+import com.hmx.pdf.backend.DiagnosticsRepository
 import com.hmx.pdf.data.repository.AppSettingsManager
 import com.hmx.pdf.data.repository.GitHubStarPromptManager
 import com.hmx.pdf.data.repository.OnboardingManager
+import com.hmx.pdf.data.repository.PrivacyChoices
+import com.hmx.pdf.data.repository.PrivacyConsentManager
+import com.hmx.pdf.data.repository.PrivacyPromptPolicy
 import com.hmx.pdf.data.repository.SaveRecovery
 import com.hmx.pdf.ui.components.DocsBottomTabs
 import com.hmx.pdf.ui.components.LiquidButton
@@ -78,6 +84,7 @@ import com.hmx.pdf.ui.components.GlassOverlayHost
 import com.hmx.pdf.ui.components.GlassOverlayLayer
 import com.hmx.pdf.ui.components.LocalGlassOverlayHost
 import com.hmx.pdf.ui.components.LocalBackToLibraryAction
+import com.hmx.pdf.ui.components.PrivacyConsentDialog
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Dispatchers
@@ -141,6 +148,12 @@ fun DocsApp(
         }
     }
     var showStarPrompt by rememberSaveable { mutableStateOf(false) }
+    // One-time privacy choices, shown over Home after onboarding. Completion is stored apart
+    // from either consent, so dismissing this never grants or revokes anything.
+    val diagnosticsRepository = remember(context) { DiagnosticsRepository(context) }
+    var showPrivacyPrompt by rememberSaveable { mutableStateOf(false) }
+    var privacyDiagnostics by rememberSaveable { mutableStateOf(false) }
+    var privacyAnalytics by rememberSaveable { mutableStateOf(false) }
     // Switching into or out of a right-to-left language (Arabic) can't flip the layout in place;
     // the app offers a restart instead.
     var restartForDirection by rememberSaveable { mutableStateOf(false) }
@@ -298,6 +311,38 @@ fun DocsApp(
                 recoveryChecked = true
             }
         }
+        // After onboarding lands on Home, offer the two independent privacy choices once per
+        // install. Never over onboarding, What's New, a document window or a recovery prompt.
+        LaunchedEffect(
+            currentRoute,
+            needsOnboarding,
+            documentWindow,
+            showWhatsNew,
+            recoveryEntry,
+            showPrivacyPrompt,
+        ) {
+            if (showPrivacyPrompt) return@LaunchedEffect
+            if (!PrivacyPromptPolicy.shouldShow(
+                    backendEnabled = BackendConfig.enabled,
+                    onboardingCompleted = OnboardingManager.hasCompletedOnboarding(context),
+                    promptCompleted = PrivacyConsentManager.hasCompletedPrompt(context),
+                    documentWindow = documentWindow,
+                    route = currentRoute,
+                    recoveryPending = recoveryEntry != null,
+                )
+            ) return@LaunchedEffect
+            privacyDiagnostics = diagnosticsRepository.consentEnabled
+            privacyAnalytics = Analytics.hasConsent()
+            showPrivacyPrompt = true
+        }
+        // If the process is restored with the prompt open, re-read stored consent so the switches
+        // still reflect the real choices rather than saved UI defaults.
+        LaunchedEffect(showPrivacyPrompt) {
+            if (showPrivacyPrompt) {
+                privacyDiagnostics = diagnosticsRepository.consentEnabled
+                privacyAnalytics = Analytics.hasConsent()
+            }
+        }
         // A document window has no Home entry to anchor tab switches, so it keeps the app tab bar
         // out of its viewer/settings stack.
         val showBottomTabs = !documentWindow && (
@@ -344,7 +389,9 @@ fun DocsApp(
         // recent failure, backing off). Never mid-task, never in a document opened from another
         // app, never on a launch that showed the tour or What's New. Leaving the tab cancels it.
         LaunchedEffect(currentRoute, starMoment, recoveryEntry) {
-            if (showWhatsNew || needsOnboarding || documentWindow || recoveryEntry != null) {
+            if (showWhatsNew || needsOnboarding || documentWindow || recoveryEntry != null ||
+                showPrivacyPrompt
+            ) {
                 return@LaunchedEffect
             }
             if (currentRoute != "home" && currentRoute != "tools") return@LaunchedEffect
@@ -655,6 +702,7 @@ fun DocsApp(
                 val pendingRecovery = recoveryEntry
                 GlassDialog(
                     visible = pendingRecovery != null &&
+                        !showPrivacyPrompt &&
                         currentRoute != com.hmx.pdf.ui.navigation.ROUTE_WHATS_NEW &&
                         currentRoute != com.hmx.pdf.ui.navigation.ROUTE_ONBOARDING,
                     onDismiss = { recoveryEntry = null },
@@ -712,6 +760,35 @@ fun DocsApp(
                     )
                 }
 
+                // First-launch privacy choices. Placed after the recovery prompt so it owns the
+                // screen while visible; "Not now", back and scrim dismissal leave consent untouched.
+                PrivacyConsentDialog(
+                    visible = showPrivacyPrompt,
+                    initialDiagnostics = privacyDiagnostics,
+                    initialAnalytics = privacyAnalytics,
+                    backdrop = contentBackdrop,
+                    approvedPrivacyPolicyUrl = APPROVED_PRIVACY_POLICY_URL,
+                    onDismiss = {
+                        PrivacyConsentManager.markPromptCompleted(context)
+                        showPrivacyPrompt = false
+                    },
+                    onContinue = { diagnostics, analytics ->
+                        val changes = PrivacyPromptPolicy.changes(
+                            choices = PrivacyChoices(diagnostics, analytics),
+                            currentDiagnostics = diagnosticsRepository.consentEnabled,
+                            currentAnalytics = Analytics.hasConsent(),
+                        )
+                        changes.diagnostics?.let(diagnosticsRepository::setConsent)
+                        when (changes.analytics) {
+                            true -> Analytics.enable { }
+                            false -> Analytics.disable { }
+                            null -> Unit
+                        }
+                        PrivacyConsentManager.markPromptCompleted(context)
+                        showPrivacyPrompt = false
+                    },
+                )
+
                 // Last child: above the tab bar and dialogs, outside the layer it samples.
                 GlassOverlayLayer(overlayHost, contentBackdrop)
             }
@@ -719,6 +796,12 @@ fun DocsApp(
         }
     }
 }
+
+/**
+ * An approved public privacy-policy URL. Left null until the owner supplies one: the prompt must
+ * not link to an unapproved destination, and all required disclosures are already in the dialog.
+ */
+private const val APPROVED_PRIVACY_POLICY_URL: String? = null
 
 /** Whether [tag]'s language reads right to left (Arabic, in the app's languages). */
 private fun isRtlTag(tag: String): Boolean =
