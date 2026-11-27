@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "tanishka1233/HMXPDF",
-  "generated_at_utc": "2026-11-26T15:23:45Z",
+  "generated_at_utc": "2026-11-27T15:10:59Z",
   "source": "GitHub REST API /repos/{repo}/releases (asset download_count)",
   "source_url": "https://api.github.com/repos/tanishka1233/HMXPDF/releases",
   "disclaimers": [
@@ -13,9 +13,9 @@
   "totals": {
     "releases": 1,
     "releases_with_apk": 1,
-    "apk_downloads": 2,
+    "apk_downloads": 3,
     "installable_apk_downloads": 0,
-    "apk_bundle_downloads": 2,
+    "apk_bundle_downloads": 3,
     "assets": 2
   },
   "latest_release": {
@@ -23,7 +23,7 @@
     "title": "HMXPDF v2.1.1 \u2014 Official Android Release",
     "published_at": "2026-11-18T17:25:39Z",
     "url": "https://github.com/tanishka1233/HMXPDF/releases/tag/v2.1.1",
-    "apk_downloads": 2
+    "apk_downloads": 3
   },
   "releases": [
     {
@@ -41,7 +41,7 @@
           "kind_label": "APK ZIP (multi-ABI bundle)",
           "abi": "multi",
           "size": 132886048,
-          "download_count": 2,
+          "download_count": 3,
           "content_type": "application/zip",
           "digest": "18ed388d55426626fc7f02f90f883d8d9426a61fb2742c43fa02925016c34e5e",
           "browser_download_url": "https://github.com/tanishka1233/HMXPDF/releases/download/v2.1.1/HMXPDF-v2.1.1-Android-APKs.zip",
@@ -53,14 +53,14 @@
           "kind_label": "Checksum or text file",
           "abi": "none",
           "size": 97,
-          "download_count": 3,
+          "download_count": 4,
           "content_type": "text/plain",
           "digest": "d7a7fd1fee5d3c5cc449998fef8ff594c241aafb9050aa0ddad7a7a34cab6879",
           "browser_download_url": "https://github.com/tanishka1233/HMXPDF/releases/download/v2.1.1/HMXPDF-v2.1.1-Android-APKs.zip.sha256",
           "state": "uploaded"
         }
       ],
-      "apk_downloads": 2,
+      "apk_downloads": 3,
       "installable_apk_downloads": 0,
       "apk_asset_count": 1,
       "counted_assets": [
@@ -68,22 +68,22 @@
           "name": "HMXPDF-v2.1.1-Android-APKs.zip",
           "kind": "apk_bundle_zip",
           "abi": "multi",
-          "download_count": 2
+          "download_count": 3
         }
       ],
       "downloads_by_abi": {
-        "multi": 2
+        "multi": 3
       },
       "top_asset": {
         "asset_name": "HMXPDF-v2.1.1-Android-APKs.zip",
         "abi": "multi",
-        "download_count": 2
+        "download_count": 3
       },
       "excluded_assets": [
         {
           "name": "HMXPDF-v2.1.1-Android-APKs.zip.sha256",
           "kind": "checksum",
-          "download_count": 3,
+          "download_count": 4,
           "reason": "not an APK package download"
         }
       ],
@@ -92,21 +92,21 @@
   ],
   "downloads_by_abi": {
     "multi": {
-      "downloads": 2,
+      "downloads": 3,
       "percent": 100.0
     }
   },
   "most_downloaded_variant": {
     "abi": "multi",
     "label": "APK ZIP (multi-ABI)",
-    "downloads": 2,
+    "downloads": 3,
     "percent": 100.0
   },
   "release_comparison": [
     {
       "tag": "v2.1.1",
       "published_at": "2026-11-18T17:25:39Z",
-      "apk_downloads": 2,
+      "apk_downloads": 3,
       "delta_from_previous": null
     }
   ],
@@ -115,6 +115,11 @@
       "date": "2026-11-20",
       "captured_at_utc": "2026-11-20T01:26:05Z",
       "total_apk_downloads": 2
+    },
+    {
+      "date": "2026-11-27",
+      "captured_at_utc": "2026-11-27T15:10:59Z",
+      "total_apk_downloads": 3
     }
   ],
   "cloud_tests": {
@@ -200,5 +205,5 @@
     "debug": "Debug",
     "none": "Not an APK"
   },
-  "snapshot_written": false
+  "snapshot_written": true
 }
