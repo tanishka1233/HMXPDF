@@ -801,7 +801,7 @@ fun DocsApp(
  * An approved public privacy-policy URL. Left null until the owner supplies one: the prompt must
  * not link to an unapproved destination, and all required disclosures are already in the dialog.
  */
-private const val APPROVED_PRIVACY_POLICY_URL: String? = null
+private val APPROVED_PRIVACY_POLICY_URL: String? = null
 
 /** Whether [tag]'s language reads right to left (Arabic, in the app's languages). */
 private fun isRtlTag(tag: String): Boolean =
