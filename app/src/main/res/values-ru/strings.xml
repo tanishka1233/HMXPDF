@@ -1117,4 +1117,14 @@
     <string name="docx_read_rate_value">%1$s×</string>
     <string name="docx_read_current">Сейчас читается: %1$s</string>
     <string name="docx_read_hint">Используются только голоса на устройстве. Редактирование или уход со страницы останавливает чтение.</string>
+    <string name="privacy_prompt_title">Ваши настройки конфиденциальности</string>
+    <string name="privacy_prompt_intro">HMX PDF работает офлайн. Две необязательные программы помогают нам улучшать приложение. Обе выключены, пока вы их не включите; изменить выбор можно в любой момент в настройках.</string>
+    <string name="privacy_prompt_diagnostics_title">Отчёты о сбоях и диагностика</string>
+    <string name="privacy_prompt_diagnostics_body">Отправляйте отчёт только по своему выбору, указав описание, версию приложения, уровень API Android и язык. Мы никогда не собираем содержимое документов, модель устройства или местоположение.</string>
+    <string name="privacy_prompt_analytics_title">Анонимные сведения о продукте</string>
+    <string name="privacy_prompt_analytics_body">Передавайте счётчики разрешённых функций и надёжность сеансов со случайным идентификатором установки. Мы никогда не собираем содержимое документов, имена файлов, пути, местоположение или контактные данные.</string>
+    <string name="privacy_prompt_footnote">Чтобы пользоваться HMX PDF, ничего выбирать не нужно. «Не сейчас» оставляет обе опции выключенными.</string>
+    <string name="privacy_prompt_not_now">Не сейчас</string>
+    <string name="privacy_prompt_continue">Продолжить</string>
+    <string name="privacy_prompt_policy">Политика конфиденциальности</string>
 </resources>

@@ -1112,4 +1112,14 @@
     <string name="docx_read_rate_value">%1$s×</string>
     <string name="docx_read_current">Leyendo ahora: %1$s</string>
     <string name="docx_read_hint">Solo se usan voces del dispositivo. Editar o salir de la página detiene la lectura.</string>
+    <string name="privacy_prompt_title">Tus opciones de privacidad</string>
+    <string name="privacy_prompt_intro">HMX PDF funciona sin conexión. Dos programas opcionales nos ayudan a mejorar la aplicación. Ambos están desactivados a menos que los actives, y puedes cambiarlos en cualquier momento en Ajustes.</string>
+    <string name="privacy_prompt_diagnostics_title">Informes de fallos y diagnóstico</string>
+    <string name="privacy_prompt_diagnostics_body">Envía un informe solo cuando lo elijas, con tu descripción, versión de la aplicación, nivel de API de Android e idioma. Nunca el contenido de documentos, el modelo del dispositivo ni la ubicación.</string>
+    <string name="privacy_prompt_analytics_title">Datos anónimos sobre el producto</string>
+    <string name="privacy_prompt_analytics_body">Comparte recuentos de funciones permitidas y fiabilidad de sesiones con un ID de instalación aleatorio. Nunca el contenido de documentos, nombres de archivo, rutas, ubicación ni datos de contacto.</string>
+    <string name="privacy_prompt_footnote">No es necesario elegir nada para usar HMX PDF. «Ahora no» mantiene ambas opciones desactivadas.</string>
+    <string name="privacy_prompt_not_now">Ahora no</string>
+    <string name="privacy_prompt_continue">Continuar</string>
+    <string name="privacy_prompt_policy">Política de privacidad</string>
 </resources>

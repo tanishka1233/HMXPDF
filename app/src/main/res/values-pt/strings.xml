@@ -1110,4 +1110,14 @@
     <string name="docx_read_rate_value">%1$s×</string>
     <string name="docx_read_current">A ler agora: %1$s</string>
     <string name="docx_read_hint">Apenas são usadas vozes do dispositivo. Editar ou sair da página para a leitura.</string>
+    <string name="privacy_prompt_title">As suas escolhas de privacidade</string>
+    <string name="privacy_prompt_intro">O HMX PDF funciona offline. Dois programas opcionais ajudam-nos a melhorar a aplicação. Ambos estão desativados a menos que os ative, e pode alterá-los a qualquer momento nas Definições.</string>
+    <string name="privacy_prompt_diagnostics_title">Relatórios de falhas e diagnósticos</string>
+    <string name="privacy_prompt_diagnostics_body">Envie um relatório apenas quando escolher, com a sua descrição, versão da aplicação, nível de API do Android e idioma. Nunca conteúdos de documentos, modelo do dispositivo ou localização.</string>
+    <string name="privacy_prompt_analytics_title">Informações anónimas sobre o produto</string>
+    <string name="privacy_prompt_analytics_body">Partilhe contagens de funcionalidades permitidas e fiabilidade das sessões com um ID de instalação aleatório. Nunca conteúdos de documentos, nomes de ficheiros, caminhos, localização ou dados de contacto.</string>
+    <string name="privacy_prompt_footnote">Não precisa de escolher nada para usar o HMX PDF. «Agora não» mantém ambas as opções desativadas.</string>
+    <string name="privacy_prompt_not_now">Agora não</string>
+    <string name="privacy_prompt_continue">Continuar</string>
+    <string name="privacy_prompt_policy">Política de privacidade</string>
 </resources>
