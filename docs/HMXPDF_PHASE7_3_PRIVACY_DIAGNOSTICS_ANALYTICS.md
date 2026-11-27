@@ -133,6 +133,8 @@ No synthetic events, installations, activity days or consent-log rows remain in 
 
 A staging-only owner account was provisioned for the owner's real email so the staging panel can be inspected. Its one-time password is in a local `0600` file (`/tmp/opencode/hmx-staging-owner-credentials.txt`), never printed or committed. The owner should change it after first sign-in. The staging account is separate from production.
 
+After verification, every synthetic staging administrator account (owner, admin, support, viewer, suspended and non-admin probes) was deleted, together with its `hmx.admin_members` row. Staging now holds exactly one administrator — the owner account — and exactly one report, the owner's real report `hsiabse`. The append-only audit log was retained, as designed.
+
 ---
 
 ## 6. Task 6 — Fresh-install and returning-user journey
@@ -205,7 +207,7 @@ Admin `.github/workflows/admin-ci.yml` (new):
 | `app-play-x86-staging.apk` SHA-256 | `c31bced36f2b55ffb72a9f663d9d722d695337521e368d7c9df6752476fd6ae7` |
 | `app-play-x86_64-staging.apk` SHA-256 | `b3445c27d82e60f806bf1829b312d50690e1ec7fec6584b1e4d8a7a5e76b6a7b` |
 | Debug certificate SHA-256 (this run) | `11158a829a09ce6084aae80ad8f4593a3ce2e584a2e47fde9c14196e3f65e24f` |
-| Admin CI run | [45947425968](https://github.com/tanishka1233/HMXPDF-Admin/actions/runs/45947425968) — success (web + Edge Function typecheck) |
+| Admin CI run | [45948888655](https://github.com/tanishka1233/HMXPDF-Admin/actions/runs/45948888655) — success (web + Edge Function typecheck) |
 
 ---
 
