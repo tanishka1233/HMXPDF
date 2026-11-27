@@ -1118,9 +1118,9 @@
     <string name="docx_read_current">In lettura: %1$s</string>
     <string name="docx_read_hint">Si usano solo voci sul dispositivo. Modificare o uscire dalla pagina interrompe la lettura.</string>
     <string name="privacy_prompt_title">Le tue scelte sulla privacy</string>
-    <string name="privacy_prompt_intro">HMX PDF funziona offline. Due programmi opzionali ci aiutano a migliorare l'app. Entrambi sono disattivati finché non li attivi e puoi modificarli in qualsiasi momento nelle Impostazioni.</string>
+    <string name="privacy_prompt_intro">HMX PDF funziona offline. Due programmi opzionali ci aiutano a migliorare l’app. Entrambi sono disattivati finché non li attivi e puoi modificarli in qualsiasi momento nelle Impostazioni.</string>
     <string name="privacy_prompt_diagnostics_title">Segnalazioni di arresti anomali e diagnostica</string>
-    <string name="privacy_prompt_diagnostics_body">Invia una segnalazione solo quando scegli di farlo, con la tua descrizione, la versione dell'app, il livello API di Android e la lingua. Mai contenuti dei documenti, modello del dispositivo o posizione.</string>
+    <string name="privacy_prompt_diagnostics_body">Invia una segnalazione solo quando scegli di farlo, con la tua descrizione, la versione dell’app, il livello API di Android e la lingua. Mai contenuti dei documenti, modello del dispositivo o posizione.</string>
     <string name="privacy_prompt_analytics_title">Informazioni anonime sul prodotto</string>
     <string name="privacy_prompt_analytics_body">Condividi conteggi delle funzioni consentite e affidabilità delle sessioni con un ID installazione casuale. Mai contenuti dei documenti, nomi dei file, percorsi, posizione o dati di contatto.</string>
     <string name="privacy_prompt_footnote">Non è necessario scegliere nulla per usare HMX PDF. «Non ora» mantiene entrambe le opzioni disattivate.</string>
