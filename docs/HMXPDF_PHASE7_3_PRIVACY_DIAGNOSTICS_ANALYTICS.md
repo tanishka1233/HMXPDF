@@ -2,7 +2,7 @@
 
 **Status:** staging implementation and verification complete. **No production migration, deployment, scheduler change or release was performed.**
 **Date:** 2026-11-27
-**Android branch:** `feature/hmxpdf-backend-integration` @ `4f7ca14`
+**Android branch:** `feature/hmxpdf-backend-integration` @ `df1ffb0`
 **Admin branch:** `phase7.1-staging-acceptance` @ `f929e6d`
 **Production backend:** `qjhlzsopnwozpsdosbjt` — untouched (read-only checks only).
 **Staging backend:** `hwwnksxfrllkrqonngob` (`HMXPDF`, `cpkhymlqqeoqlipcsmdw`, `ap-northeast-1`).
@@ -195,11 +195,17 @@ Admin `.github/workflows/admin-ci.yml` (new):
 
 | Evidence | Value |
 |---|---|
-| Android CI run | `PENDING` |
-| Android test count | `PENDING` |
-| Staging artifact | `PENDING` |
-| Staging APK SHA-256 | `PENDING` |
-| Admin CI run | [45947054350](https://github.com/tanishka1233/HMXPDF-Admin/actions/runs/45947054350) — success (web + Edge Function typecheck) |
+| Android CI run | [45947671064](https://github.com/tanishka1233/HMXPDF/actions/runs/45947671064) — success |
+| Android test count | **432 tests, 0 failures, 42 skipped** (pre-existing skips) |
+| Staging artifact | `hmxpdf-staging-apk` (5 ABI APKs) |
+| Staging APK inspection | passed on every ABI: staging endpoint present once, no production ref, no admin URL/route, no `service_role`/`sb_secret_`/`SUPABASE_SERVICE` |
+| `app-play-arm64-v8a-staging.apk` SHA-256 | `e3f734161ade83ebc6b25b1f85b7a230c7fa60376204a77218ab6af5f789c5bb` |
+| `app-play-armeabi-v7a-staging.apk` SHA-256 | `1e5fd7a411897638775679108287c148b1a8231a27ebe178a1c72c6aa8e25bde` |
+| `app-play-universal-staging.apk` SHA-256 | `2608b6fd4b61bf18c898812afe0c923efefe3194f413251fc35bd4a6deffd39c` |
+| `app-play-x86-staging.apk` SHA-256 | `c31bced36f2b55ffb72a9f663d9d722d695337521e368d7c9df6752476fd6ae7` |
+| `app-play-x86_64-staging.apk` SHA-256 | `b3445c27d82e60f806bf1829b312d50690e1ec7fec6584b1e4d8a7a5e76b6a7b` |
+| Debug certificate SHA-256 (this run) | `11158a829a09ce6084aae80ad8f4593a3ce2e584a2e47fde9c14196e3f65e24f` |
+| Admin CI run | [45947425968](https://github.com/tanishka1233/HMXPDF-Admin/actions/runs/45947425968) — success (web + Edge Function typecheck) |
 
 ---
 
