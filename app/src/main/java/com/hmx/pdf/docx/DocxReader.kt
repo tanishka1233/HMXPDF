@@ -44,7 +44,20 @@ class DocxPackage(
     /** False for documents this editor can show but can't safely write (Strict OOXML, odd prefixes). */
     val writable: Boolean
 ) {
-    fun image(rid: String): ByteArray? = rels[rid]?.let { media[it] }
+    fun image(rid: String): ByteArray? = rels[rid]?.let { media[it] ?: emptyMedia[it] }
+
+    /** Preview-only map for images added in this session before save; `DocxWriter` receives them via [DocxWriter.Extras]. */
+    val emptyMedia: Map<String, ByteArray> get() = emptyMap()
+
+    /** Copy with an extra image relationship + media for rendering; `relsXml` untouched (writer adds relationship via extras). */
+    fun withImageAdded(rid: String, mediaPath: String, bytes: ByteArray): DocxPackage = DocxPackage(
+        mainPath = mainPath, xml = xml, bodyOpenEnd = bodyOpenEnd, bodyCloseStart = bodyCloseStart,
+        styles = styles, stylesPath = stylesPath, numbering = numbering, numberingPath = numberingPath,
+        comments = comments, theme = theme,
+        rels = rels + (rid to mediaPath), links = links, relsPath = relsPath, relsXml = relsXml, contentTypes = contentTypes,
+        media = media + (mediaPath to bytes), page = page, hfParts = hfParts, settingsPath = settingsPath, settings = settings,
+        notes = notes, writable = writable,
+    )
 }
 
 /**

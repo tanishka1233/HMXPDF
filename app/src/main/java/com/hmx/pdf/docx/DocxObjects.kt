@@ -10,7 +10,11 @@ class ObjInfo(
     val textBox: List<DocBlock>,
     val pageBreak: Boolean,
     /** A floating picture's horizontal alignment ("left", "center", "right"), when it gives one. */
-    val hAlign: String? = null
+    val hAlign: String? = null,
+    /** DrawingML image style for selection/preview. */
+    val imageStyle: DocxImageStyle = DocxImageStyle(),
+    /** Raw object run for image editing; not rendered. */
+    val obj: String? = null
 )
 
 object DocxObjects {
@@ -45,7 +49,7 @@ object DocxObjects {
         val txbx = root.descendant("txbxContent")
         val text = if (txbx != null) DocxReader.Ctx(obj).container(txbx.children, readOnly = true) else emptyList()
         val hAlign = root.descendant("positionH")?.child("align")?.let { XmlScan.unescape(it.inner(obj)).trim() }
-        return ObjInfo(rid, w, h, text, isPageBreak(obj), hAlign)
+        return ObjInfo(rid, w, h, text, isPageBreak(obj), hAlign, DocxImageOps.style(obj), obj)
     }
 
     private fun cssPt(style: String, key: String): Float {

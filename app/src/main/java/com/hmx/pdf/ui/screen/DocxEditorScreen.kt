@@ -9,6 +9,7 @@ import android.util.LruCache
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
@@ -133,6 +134,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -251,7 +253,9 @@ private val PaperCorner = 6.dp
 private val DeskGutter = 8.dp
 private val PageGap = 14.dp
 
-private enum class DocPanel { NONE, TEXT_COLOR, HIGHLIGHT, COMMENTS, REVISIONS, LAYOUT, HEADERS, TABLE, NOTES, SPELL, READ }
+private data class SelectedDocxImage(val paraId: Long, val imageIndex: Int, val objXml: String, val originalObjXml: String)
+
+private enum class DocPanel { NONE, TEXT_COLOR, HIGHLIGHT, COMMENTS, REVISIONS, LAYOUT, HEADERS, TABLE, NOTES, SPELL, READ, IMAGE }
 
 /** Formatting chosen with nothing selected: it applies to what is typed next at [at]. */
 private class Pending(val paraId: Long, val at: Int, val fmt: CharFmt)
@@ -434,7 +438,8 @@ private class DocEnv(
     val onFocused: (DocPara) -> Unit,
     val onBlurred: (DocPara) -> Unit,
     val onFocusConsumed: () -> Unit,
-    val onReadOnlyTap: () -> Unit
+    val onReadOnlyTap: () -> Unit,
+    val onImageClick: (paraId: Long, imageIndex: Int, objXml: String) -> Unit = { _, _, _ -> }
 )
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
@@ -518,6 +523,7 @@ private fun DocxEditorContent(
     val zoom = (zoomTarget * 20f).roundToInt() / 20f
     val pinchFocus = remember { floatArrayOf(0f, 0f) }
     var activeId by remember { mutableStateOf<Long?>(null) }
+    var selectedImage by remember { mutableStateOf<SelectedDocxImage?>(null) }
     var activeValue by remember { mutableStateOf(TextFieldValue()) }
     var focusTarget by remember { mutableStateOf<Long?>(null) }
     var pending by remember { mutableStateOf<Pending?>(null) }
@@ -798,6 +804,30 @@ private fun DocxEditorContent(
         applyChar { p, f -> DocxEdits.toggle(p, f, s, t, !current) }
     }
 
+    // ── DOCX image picker (Android Photo Picker; no broad storage permission) ──
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val paraId = activeId ?: selectedImage?.paraId
+            if (paraId != null && viewModel.insertImageFromUri(context, uri, paraId)) {
+                selectedImage = null
+                panel = DocPanel.IMAGE
+            } else {
+                Toast.makeText(context, "Couldn't insert that image.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        // null = cancelled; no change
+    }
+    val replaceImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val sel = selectedImage
+        if (uri != null && sel != null) {
+            if (viewModel.replaceImageFromUri(context, uri, sel.paraId, sel.imageIndex)) {
+                Toast.makeText(context, "Image replaced.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Couldn't replace image.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // ── saving, sharing, printing ──────────────────────────────────────────────
 
     val saveAsLauncher = rememberLauncherForActivityResult(
@@ -1042,6 +1072,11 @@ private fun DocxEditorContent(
                                 readOnlyHinted = true
                                 Toast.makeText(context, R.string.docx_readonly_part, Toast.LENGTH_LONG).show()
                             }
+                        },
+                        onImageClick = { paraId, imageIndex, objXml ->
+                            selectedImage = SelectedDocxImage(paraId, imageIndex, objXml, originalObjXml = objXml)
+                            activeId = null
+                            panel = DocPanel.IMAGE
                         }
                     )
                     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -1134,6 +1169,9 @@ private fun DocxEditorContent(
                 GlassToolbar(backdrop = screenBackdrop.glass, modifier = Modifier.fillMaxWidth()) {
                     GlassToolButton(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.sheet_undo), false, { viewModel.undo() }, enabled = viewModel.canUndo, accent = accent)
                     GlassToolButton(Icons.AutoMirrored.Rounded.Redo, stringResource(R.string.sheet_redo), false, { viewModel.redo() }, enabled = viewModel.canRedo, accent = accent)
+                    GlassToolButton(Icons.Rounded.Image, "Insert Image", false, {
+                            imagePicker.launch(PickVisualMediaRequest(mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }, enabled = pkg != null && viewModel.editable, accent = accent)
                     GlassToolButton(Icons.Rounded.FormatBold, stringResource(R.string.sheet_bold), bold, { toggle(DocxEdits.Toggle.BOLD, bold) }, enabled = has, accent = accent)
                     GlassToolButton(Icons.Rounded.FormatItalic, stringResource(R.string.sheet_italic), italic, { toggle(DocxEdits.Toggle.ITALIC, italic) }, enabled = has, accent = accent)
                     GlassToolButton(Icons.Rounded.FormatUnderlined, stringResource(R.string.sheet_underline), underline, { toggle(DocxEdits.Toggle.UNDERLINE, underline) }, enabled = has, accent = accent)
@@ -1192,6 +1230,23 @@ private fun DocxEditorContent(
                     }, enabled = has, accent = accent)
                     GlassToolButton(Icons.Rounded.Superscript, stringResource(R.string.docx_superscript), sup, { toggle(DocxEdits.Toggle.SUPERSCRIPT, sup) }, enabled = has, accent = accent)
                     GlassToolButton(Icons.Rounded.FormatClear, stringResource(R.string.docx_clear), false, { applyChar { _, f -> DocxEdits.cleared(f) } }, enabled = has, accent = accent)
+                    val sel = selectedImage
+                    if (sel != null) {
+                        GlassToolButton(Icons.Rounded.Tune, "Image Options", panel == DocPanel.IMAGE, { panel = if (panel == DocPanel.IMAGE) DocPanel.NONE else DocPanel.IMAGE }, accent = accent)
+                        GlassToolButton(Icons.Rounded.RotateLeft, "Rotate left", false, { viewModel.rotateImageLeft(sel.paraId, sel.imageIndex) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.RotateRight, "Rotate right", false, { viewModel.rotateImageRight(sel.paraId, sel.imageIndex) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.Crop, "Crop", false, { viewModel.cropImage(sel.paraId, sel.imageIndex, 10f, 10f, 10f, 10f) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.AspectRatio, "Resize +", false, { viewModel.resizeImage(sel.paraId, sel.imageIndex, 1.1f) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.Flip, "Flip horizontal", false, { viewModel.flipImageHorizontal(sel.paraId, sel.imageIndex) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.FlipCameraAndroid, "Flip vertical", false, { viewModel.flipImageVertical(sel.paraId, sel.imageIndex) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.FormatAlignLeft, "Align left", false, { viewModel.setImageAlignment(sel.paraId, sel.imageIndex, "left") }, accent = accent)
+                        GlassToolButton(Icons.Rounded.FormatAlignCenter, "Align center", false, { viewModel.setImageAlignment(sel.paraId, sel.imageIndex, "center") }, accent = accent)
+                        GlassToolButton(Icons.Rounded.FormatAlignRight, "Align right", false, { viewModel.setImageAlignment(sel.paraId, sel.imageIndex, "right") }, accent = accent)
+                        GlassToolButton(Icons.Rounded.OpenInNew, "Replace", false, { replaceImagePicker.launch(PickVisualMediaRequest(mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly)) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.BorderColor, "Border", false, { viewModel.setImageBorder(sel.paraId, sel.imageIndex, true, "000000", 9525L) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.Refresh, "Reset", false, { viewModel.resetImage(sel.paraId, sel.imageIndex, sel.originalObjXml) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.Delete, "Delete", false, { viewModel.deleteImage(sel.paraId, sel.imageIndex); selectedImage = null; panel = DocPanel.NONE }, accent = accent)
+                    }
                     GlassToolButton(Icons.Rounded.SaveAs, stringResource(R.string.sheet_save_as), false, { save(true) }, accent = accent)
                 }
             }
@@ -2474,14 +2529,18 @@ private fun ParagraphBlock(
                 TextAlign.End, TextAlign.Right -> Alignment.End
                 else -> Alignment.Start
             }
-            for (pic in pictures) {
-                val align = when (pic.hAlign) {
+            for ((picIndex, pic) in pictures.withIndex()) {
+                val align = when (pic.hAlign ?: pic.imageStyle.hAlign) {
                     "center" -> Alignment.CenterHorizontally
                     "right", "outside" -> Alignment.End
                     "left", "inside" -> Alignment.Start
                     else -> paraAlign
                 }
-                DocPicture(pic, env.pkg, look, maxWidth - pl.padStart - pl.padEnd, align)
+                DocPicture(
+                    info = pic, pkg = env.pkg, look = look,
+                    maxWidth = maxWidth - pl.padStart - pl.padEnd, align = align,
+                    onClick = { env.onImageClick(para.id, picIndex, pic.obj.orEmpty()) },
+                )
             }
             for (box in boxes) {
                 Column(
@@ -2615,7 +2674,14 @@ internal object DocImages {
 }
 
 @Composable
-private fun DocPicture(info: ObjInfo, pkg: DocxPackage, look: DocxLook, maxWidth: Dp, align: Alignment.Horizontal) {
+private fun DocPicture(
+    info: ObjInfo,
+    pkg: DocxPackage,
+    look: DocxLook,
+    maxWidth: Dp,
+    align: Alignment.Horizontal,
+    onClick: () -> Unit = {},
+) {
     val rid = info.imageRid ?: return
     val bytes = remember(pkg, rid) { pkg.image(rid) }
     val want = if (info.widthPt > 0f) (info.widthPt * look.scale).dp else maxWidth
@@ -2632,14 +2698,22 @@ private fun DocPicture(info: ObjInfo, pkg: DocxPackage, look: DocxLook, maxWidth
     }
     val ratio = if (info.widthPt > 0f && info.heightPt > 0f) info.heightPt / info.widthPt
     else pic?.image?.let { it.height.toFloat() / it.width.coerceAtLeast(1) } ?: 0.6f
+    val st = info.imageStyle
+    val cropped = st.cropLeftPct > 0f || st.cropTopPct > 0f || st.cropRightPct > 0f || st.cropBottomPct > 0f
+    val borderColor = androidx.compose.ui.graphics.Color(0xFF000000L or (st.borderColor.toLongOrNull(16) ?: 0L))
     Column(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalAlignment = align) {
         Box(
             Modifier.width(w).aspectRatio((1f / ratio.coerceIn(0.05f, 20f)))
+                .clip(RoundedCornerShape(4.dp))
+                .then(if (st.borderEnabled) Modifier.border(1.dp, borderColor, RoundedCornerShape(4.dp)) else Modifier)
+                .then(if (st.rotationDegrees != 0f) Modifier.rotate(st.rotationDegrees) else Modifier)
+                .graphicsLayer { scaleX = if (st.flipH) -1f else 1f; scaleY = if (st.flipV) -1f else 1f }
                 .background(if (pic == null) look.ink.copy(0.06f) else Color.Transparent)
+                .clickable(interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Select image", onClick = onClick)
         ) {
             pic?.let {
                 Image(
-                    it.image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
+                    it.image, "Image", Modifier.fillMaxSize(), contentScale = if (cropped) ContentScale.Crop else ContentScale.Fit,
                     colorFilter = if (look.dark && it.paperLike) NightPaper.filter else null
                 )
             }

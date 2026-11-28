@@ -21,6 +21,7 @@ object DocxWriter {
     private const val HF_HEADER_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
     private const val HF_FOOTER_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
     private const val FOOTNOTES_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"
+    private const val IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
     private const val ENDNOTES_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes"
     private const val W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
@@ -45,8 +46,17 @@ object DocxWriter {
         /** `path → original root start tag` for edited existing parts (FA-03): keeps foreign namespaces and root attributes. */
         val hfEnvelopes: Map<String, String> = emptyMap(),
         /** `path → complete XML` for footnote/endnote parts the session changed. */
-        val notes: Map<String, String> = emptyMap()
+        val notes: Map<String, String> = emptyMap(),
+        /** New media entries added in this session (`path → bytes`); written as new zip entries. */
+        val mediaAdd: Map<String, ByteArray> = emptyMap(),
+        /** New relationships added in this session: `id`, `type`, `target`. */
+        val relsAdd: List<RelAdd> = emptyList(),
+        /** New `[Content_Types].xml` defaults/overrides. */
+        val contentTypeAdds: List<ContentTypeAdd> = emptyList()
     )
+
+    data class RelAdd(val id: String, val type: String, val target: String, val external: Boolean = false)
+    data class ContentTypeAdd(val extension: String?, val partName: String?, val contentType: String, val isDefault: Boolean)
 
     fun documentXml(pkg: DocxPackage, state: DocState): String {
         val sb = StringBuilder(pkg.xml.length + 1024)
@@ -153,7 +163,15 @@ object DocxWriter {
                 types = addOverride(types, "/" + p, "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml")
             }
         }
-        if (rels != pkg.relsXml && rels != null) {
+        for ((path, bytes) in extras.mediaAdd) { add[path] = bytes }
+        for (r in extras.relsAdd) {
+            rels = addRelWithId(rels ?: newRels(), r.type, r.target, r.id)
+        }
+        for (c in extras.contentTypeAdds) {
+            types = if (c.isDefault && c.extension != null) addDefault(types, c.extension, c.contentType)
+                    else if (c.partName != null) addOverride(types, c.partName, c.contentType) else types
+        }
+        if (rels != pkg.relsXml && rels != null) {        if (rels != pkg.relsXml && rels != null) {
             if (pkg.relsXml != null) replace[pkg.relsPath] = rels.toByteArray(Charsets.UTF_8) else add[pkg.relsPath] = rels.toByteArray(Charsets.UTF_8)
         }
         if (types != pkg.contentTypes && types != null) replace["[Content_Types].xml"] = types.toByteArray(Charsets.UTF_8)
@@ -162,6 +180,14 @@ object DocxWriter {
 
     private fun relTarget(dir: String, path: String): String =
         if (dir.isNotEmpty() && path.startsWith("$dir/")) path.removePrefix("$dir/") else "/$path"
+
+    internal fun addDefault(types: String?, extension: String, contentType: String): String? {
+        types ?: return null
+        if (types.contains("Extension="$extension"")) return types
+        val close = types.lastIndexOf("</")
+        val insert = if (close >= 0) close else types.length
+        return types.substring(0, insert) + "<Default Extension="$extension" ContentType="$contentType"/>" + types.substring(insert)
+    }
 
     /** `abstractNum`s go after the existing ones, `num`s after theirs — the schema's sequence. */
     internal fun insertNumbering(xml: String, abstracts: String, nums: String): String {

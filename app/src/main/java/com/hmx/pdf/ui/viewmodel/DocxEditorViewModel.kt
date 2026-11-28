@@ -18,6 +18,8 @@ import com.hmx.pdf.docx.DocBlock
 import com.hmx.pdf.docx.CommentInfo
 import com.hmx.pdf.docx.CharFmt
 import com.hmx.pdf.docx.DocIds
+import com.hmx.pdf.docx.DocxImageOps
+import com.hmx.pdf.docx.DocxImageLoader
 import com.hmx.pdf.docx.DocxPageLayout
 import com.hmx.pdf.docx.OBJ_CHAR
 import com.hmx.pdf.docx.PageSetup
@@ -1282,6 +1284,10 @@ class DocxEditorViewModel : ViewModel() {
 
     private val hfChanged = HashMap<String, DocState>()
     private val hfRelIds = HashMap<String, String>()
+    /** Phase 8.2 DOCX image session additions (not persisted until save; kept out of production PDF paths). */
+    private val imageMediaAdd = LinkedHashMap<String, ByteArray>()
+    private val imageRelsAdd = ArrayList<DocxWriter.RelAdd>()
+    private val imageContentTypeAdds = ArrayList<DocxWriter.ContentTypeAdd>()
     /**
      * `path → the part's original root start tag` (FA-03): captured from the loaded part the
      * first time it is parsed, so an edit re-serializes under a root that still declares the
@@ -1434,7 +1440,10 @@ class DocxEditorViewModel : ViewModel() {
             hfRelIds = hfRelIds.toMap(),
             settings = if (settingsChanged) wantSettings else null,
             hfEnvelopes = hfEnvelopes.toMap(),
-            notes = noteParts
+            notes = noteParts,
+            mediaAdd = imageMediaAdd.toMap(),
+            relsAdd = imageRelsAdd.toList(),
+            contentTypeAdds = imageContentTypeAdds.toList()
         )
     }
 
@@ -1474,6 +1483,7 @@ class DocxEditorViewModel : ViewModel() {
         packageSavedHf.clear()
         packageSavedHf.putAll(capture.extras.hfSave)
         capture.notes?.let { packageSavedNotes = it }
+        imageMediaAdd.clear(); imageRelsAdd.clear(); imageContentTypeAdds.clear()
         lastCheckpointFp = null
         autosave.onSaved()
         autosaveJob?.cancel(); autosaveJob = null
@@ -1713,4 +1723,119 @@ class DocxEditorViewModel : ViewModel() {
         readingEngine = null
         super.onCleared()
     }
+}
+
+// ── DOCX image insertion & editing (Phase 8.2; PDF untouched) ─────────────────
+
+fun insertImageFromUri(context: Context, uri: Uri, paraId: Long): Boolean {
+    val pkg0 = pkg ?: return false
+    val p0 = doc?.let { findPara(it.blocks, paraId) } ?: return false
+    if (!editable) return false
+    return try {
+        val loaded = DocxImageLoader.load(context, uri) ?: return false
+        val n = imageRelsAdd.size + imageMediaAdd.size + 1
+        val rid = "rIdHmxImage$n"
+        val safeExt = loaded.extension.filter { it.isLetterOrDigit() }.lowercase().ifEmpty { "png" }
+        val mediaDir = if (pkg0.mainPath.contains('/')) pkg0.mainPath.substringBeforeLast('/') + "/media" else "media"
+        val mediaPath = "$mediaDir/hmx-image-$n.$safeExt"
+        val drawingId = nextDrawingId()
+        val emu = defaultImageEmu(loaded.widthPx, loaded.heightPx)
+        val drawingXml = DocxImageOps.buildInlineDrawing(rid, emu.first, emu.second, drawingId, "image$n.$safeExt", "")
+        val obj = DocxImageOps.insertImageRun(drawingXml)
+        val at = p0.text.length
+        val fmts = p0.fmts + CharFmt(p0.fmts.lastOrNull()?.rPr.orEmpty(), obj = obj)
+        val next = p0.edited(text = p0.text + OBJ_CHAR, fmts = fmts)
+        commit(replacePara(doc!!.blocks, next)?.let { DocState(it) } ?: return false, null)
+        val pkg1 = pkg0.withImageAdded(rid, mediaPath, loaded.bytes)
+        pkg = pkg1
+        imageMediaAdd[mediaPath] = loaded.bytes
+        imageRelsAdd.add(DocxWriter.RelAdd(rid, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", "media/hmx-image-$n.$safeExt"))
+        imageContentTypeAdds.add(DocxWriter.ContentTypeAdd(safeExt, null, loaded.mime, true))
+        true
+    } catch (e: Exception) { false }
+}
+
+fun editImage(paraId: Long, imageIndex: Int, transform: (String) -> String): Boolean {
+    val p = doc?.let { findPara(it.blocks, paraId) } ?: return false
+    if (!editable) return false
+    val objIdx = p.fmts.withIndex().filter { it.value.obj != null && DocxImageOps.isImage(it.value.obj!!) }
+    if (imageIndex !in objIdx.indices) return false
+    val target = objIdx[imageIndex].index
+    val oldObj = p.fmts[target].obj ?: return false
+    val newObj = transform(oldObj)
+    if (newObj == oldObj) return true
+    val fmts = p.fmts.toMutableList()
+    fmts[target] = fmts[target].copy(obj = newObj)
+    val next = p.edited(fmts = fmts)
+    commit(replacePara(doc!!.blocks, next)?.let { DocState(it) } ?: return false, null)
+    return true
+}
+
+fun deleteImage(paraId: Long, imageIndex: Int): Boolean {
+    val p = doc?.let { findPara(it.blocks, paraId) } ?: return false
+    if (!editable) return false
+    val objIdx = p.fmts.withIndex().filter { it.value.obj != null && DocxImageOps.isImage(it.value.obj!!) }
+    if (imageIndex !in objIdx.indices) return false
+    val target = objIdx[imageIndex].index
+    val fmts = p.fmts.toMutableList()
+    fmts[target] = fmts[target].copy(obj = null, rPr = "")
+    val text = p.text.removeRange(target, target + 1)
+    val newFmts = fmts.toMutableList().also { it.removeAt(target) }
+    val next = p.edited(text = text, fmts = newFmts)
+    commit(replacePara(doc!!.blocks, next)?.let { DocState(it) } ?: return false, null)
+    return true
+}
+
+fun rotateImageLeft(paraId: Long, imageIndex: Int): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setRotation(it, DocxImageOps.style(it).rotationDegrees - 90f) }
+fun rotateImageRight(paraId: Long, imageIndex: Int): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setRotation(it, DocxImageOps.style(it).rotationDegrees + 90f) }
+fun setImageRotation(paraId: Long, imageIndex: Int, degrees: Float): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setRotation(it, degrees) }
+fun flipImageHorizontal(paraId: Long, imageIndex: Int): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setFlip(it, horizontal = !DocxImageOps.style(it).flipH) }
+fun flipImageVertical(paraId: Long, imageIndex: Int): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setFlip(it, vertical = !DocxImageOps.style(it).flipV) }
+fun resizeImage(paraId: Long, imageIndex: Int, factor: Float, preserveAspect: Boolean = true): Boolean = editImage(paraId, imageIndex) { obj ->
+    val st = DocxImageOps.style(obj); val (w, h) = DocxImageOps.scale(st, factor, preserveAspect); DocxImageOps.setExtent(obj, w, h)
+}
+fun setImageExtent(paraId: Long, imageIndex: Int, widthEmu: Long, heightEmu: Long): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setExtent(it, widthEmu, heightEmu) }
+fun cropImage(paraId: Long, imageIndex: Int, leftPct: Float, topPct: Float, rightPct: Float, bottomPct: Float): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setCrop(it, leftPct, topPct, rightPct, bottomPct) }
+fun setImageBorder(paraId: Long, imageIndex: Int, enabled: Boolean, colorHex: String, widthEmu: Long): Boolean = editImage(paraId, imageIndex) { DocxImageOps.setBorder(it, enabled, colorHex, widthEmu) }
+fun setImageAlignment(paraId: Long, imageIndex: Int, align: String): Boolean {
+    // image-level + paragraph-level alignment; preserve image XML
+    editImage(paraId, imageIndex) { it }
+    val p = doc?.let { findPara(it.blocks, paraId) } ?: return false
+    val newPPr = DocxImageOps.setHAlignParagraph(p.pPr, align)
+    if (newPPr == p.pPr) return true
+    val next = p.edited(pPr = newPPr)
+    commit(replacePara(doc!!.blocks, next)?.let { DocState(it) } ?: return false, null)
+    return true
+}
+fun resetImage(paraId: Long, imageIndex: Int, originalObj: String): Boolean = editImage(paraId, imageIndex) { originalObj }
+fun replaceImageFromUri(context: Context, uri: Uri, paraId: Long, imageIndex: Int): Boolean {
+    val loaded = DocxImageLoader.load(context, uri) ?: return false
+    val p = doc?.let { findPara(it.blocks, paraId) } ?: return false
+    val objIdx = p.fmts.withIndex().filter { it.value.obj != null && DocxImageOps.isImage(it.value.obj!!) }
+    if (imageIndex !in objIdx.indices) return false
+    val rid = Regex("r:embed=\"([^\"]+)\"").find(objIdx[imageIndex].value.obj.orEmpty())?.groupValues?.get(1)
+        ?: Regex("embed=\"([^\"]+)\"").find(objIdx[imageIndex].value.obj.orEmpty())?.groupValues?.get(1) ?: return false
+    val pkg0 = pkg ?: return false
+    val mediaPath = pkg0.rels[rid] ?: return false
+    imageMediaAdd[mediaPath] = loaded.bytes
+    imageContentTypeAdds.add(DocxWriter.ContentTypeAdd(loaded.extension.filter { it.isLetterOrDigit() }.lowercase(), null, loaded.mime, true))
+    pkg = pkg0.withImageAdded(rid, mediaPath, loaded.bytes)
+    return true // preserve layout; `DocxWriter` replaces media at same path on save
+}
+
+private fun nextDrawingId(): Int {
+    var max = 0
+    val re = Regex("(wp:docPr|pic:cNvPr)\\s+[^>]*id=\"(\\d+)\"")
+    re.findAll(pkg?.xml.orEmpty()).forEach { max = maxOf(max, it.groupValues[2].toIntOrNull() ?: 0) }
+    fun scan(blocks: List<DocBlock>) { for (b in blocks) when (b) { is DocPara -> for (f in b.fmts) f.obj?.let { re.findAll(it).forEach { m -> max = maxOf(max, m.groupValues[2].toIntOrNull() ?: 0) } }; is DocTable -> b.rows.forEach { r -> r.cells.forEach { scan(it.blocks) } }; is DocRaw -> {} } }
+    doc?.blocks?.let { scan(it) }
+    return max + 1
+}
+
+private fun defaultImageEmu(w: Int, h: Int): Pair<Long, Long> {
+    // Fit to ~2.5 inches wide, preserve aspect, reasonable sizes.
+    val targetW = 2_286_000L // 2.5 inch EMU
+    val wEmu = targetW
+    val hEmu = if (w > 0) (h.toLong() * wEmu / w).coerceAtLeast(1L) else wEmu
+    return DocxImageOps.clampDimensions(wEmu, hEmu)
 }
