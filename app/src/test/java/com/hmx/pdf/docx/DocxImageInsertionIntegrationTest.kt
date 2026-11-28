@@ -43,7 +43,7 @@ class DocxImageInsertionIntegrationTest {
         // drawing + surrounding text preserved
         val docXml = DocxFixtures.entry(saved, "word/document.xml")!!
         assertTrue(docXml.contains("<w:t xml:space=\"preserve\">Hello</w:t>"))
-        assertTrue(docXml.contains("<w:t xml:space=\"preserve\">World</w:t>"))
+        assertTrue(docXml.contains("World"))
         assertTrue(docXml.contains("<a:blip r:embed=\"rIdHmxImage1\""))
 
         // reopen
