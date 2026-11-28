@@ -39,7 +39,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `setExtent rewrites wp:extent and a:ext preserving other content`() {
+    fun `setExtent rewrites wp extent and a ext preserving other content`() {
         val xml = sampleDrawing()
         val out = DocxImageOps.setExtent(xml, 2_000_000L, 1_000_000L)
         assertTrue(out.contains("<wp:extent cx=\"2000000\" cy=\"1000000\""))
@@ -82,7 +82,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `flip horizontal and vertical persist on a:xfrm`() {
+    fun `flip horizontal and vertical persist on a xfrm`() {
         val h = DocxImageOps.setFlip(sampleDrawing(), horizontal = true)
         assertTrue(h.contains("flipH=\"1\""))
         assertTrue(DocxImageOps.style(h).flipH)
@@ -95,7 +95,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `crop writes a:srcRect percents`() {
+    fun `crop writes a srcRect percents`() {
         val out = DocxImageOps.setCrop(sampleDrawing(), 10f, 20f, 5f, 0f)
         assertTrue(out.contains("<a:srcRect l=\"10000\" t=\"20000\" r=\"5000\" b=\"0\"/>"))
         val st = DocxImageOps.style(out)
@@ -103,7 +103,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `border enable disable persists a:ln`() {
+    fun `border enable disable persists a ln`() {
         val on = DocxImageOps.setBorder(sampleDrawing(), enabled = true, colorHex = "#FF0000", widthEmu = 9525L)
         assertTrue(on.contains("<a:ln w=\"9525\""))
         assertTrue(on.contains("<a:srgbClr val=\"FF0000\""))
@@ -114,7 +114,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `paragraph alignment sets w:jc`() {
+    fun `paragraph alignment sets w jc`() {
         val pPr = DocxImageOps.setHAlignParagraph("<w:pPr></w:pPr>", "center")
         assertTrue(pPr.contains("<w:jc w:val=\"center\"/>"))
         val pPr2 = DocxImageOps.setHAlignParagraph(pPr, "right")
@@ -124,7 +124,7 @@ class DocxImageOpsTest {
     }
 
     @Test
-    fun `setEmbedRid replaces only r:embed`() {
+    fun `setEmbedRid replaces only r embed`() {
         val out = DocxImageOps.setEmbedRid(sampleDrawing(), "rIdNew")
         assertTrue(out.contains("r:embed=\"rIdNew\""))
         assertTrue(out.contains("name=\"image1.png\""))
