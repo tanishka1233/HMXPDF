@@ -21,7 +21,6 @@ object DocxWriter {
     private const val HF_HEADER_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
     private const val HF_FOOTER_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
     private const val FOOTNOTES_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"
-    private const val IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
     private const val ENDNOTES_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes"
     private const val W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
@@ -49,7 +48,7 @@ object DocxWriter {
         val notes: Map<String, String> = emptyMap(),
         /** New media entries added in this session (`path → bytes`); written as new zip entries. */
         val mediaAdd: Map<String, ByteArray> = emptyMap(),
-        /** New relationships added in this session: `id`, `type`, `target`. */
+        /** New relationships added in this session. */
         val relsAdd: List<RelAdd> = emptyList(),
         /** New `[Content_Types].xml` defaults/overrides. */
         val contentTypeAdds: List<ContentTypeAdd> = emptyList()
@@ -164,14 +163,12 @@ object DocxWriter {
             }
         }
         for ((path, bytes) in extras.mediaAdd) { add[path] = bytes }
-        for (r in extras.relsAdd) {
-            rels = addRelWithId(rels ?: newRels(), r.type, r.target, r.id)
-        }
+        for (r in extras.relsAdd) { rels = addRelWithId(rels ?: newRels(), r.type, r.target, r.id) }
         for (c in extras.contentTypeAdds) {
             types = if (c.isDefault && c.extension != null) addDefault(types, c.extension, c.contentType)
                     else if (c.partName != null) addOverride(types, c.partName, c.contentType) else types
         }
-        if (rels != pkg.relsXml && rels != null) {        if (rels != pkg.relsXml && rels != null) {
+        if (rels != pkg.relsXml && rels != null) {
             if (pkg.relsXml != null) replace[pkg.relsPath] = rels.toByteArray(Charsets.UTF_8) else add[pkg.relsPath] = rels.toByteArray(Charsets.UTF_8)
         }
         if (types != pkg.contentTypes && types != null) replace["[Content_Types].xml"] = types.toByteArray(Charsets.UTF_8)
@@ -183,10 +180,10 @@ object DocxWriter {
 
     internal fun addDefault(types: String?, extension: String, contentType: String): String? {
         types ?: return null
-        if (types.contains("Extension="$extension"")) return types
+        if (types.contains("Extension=\"$extension\"")) return types
         val close = types.lastIndexOf("</")
-        val insert = if (close >= 0) close else types.length
-        return types.substring(0, insert) + "<Default Extension="$extension" ContentType="$contentType"/>" + types.substring(insert)
+        val insertAt = if (close >= 0) close else types.length
+        return types.substring(0, insertAt) + "<Default Extension=\"$extension\" ContentType=\"$contentType\"/>" + types.substring(insertAt)
     }
 
     /** `abstractNum`s go after the existing ones, `num`s after theirs — the schema's sequence. */
