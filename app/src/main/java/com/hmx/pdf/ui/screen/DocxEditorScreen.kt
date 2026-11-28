@@ -74,6 +74,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Redo
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.rounded.BorderColor
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChangeHistory
@@ -1169,7 +1170,7 @@ private fun DocxEditorContent(
                 GlassToolbar(backdrop = screenBackdrop.glass, modifier = Modifier.fillMaxWidth()) {
                     GlassToolButton(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.sheet_undo), false, { viewModel.undo() }, enabled = viewModel.canUndo, accent = accent)
                     GlassToolButton(Icons.AutoMirrored.Rounded.Redo, stringResource(R.string.sheet_redo), false, { viewModel.redo() }, enabled = viewModel.canRedo, accent = accent)
-                    GlassToolButton(Icons.Rounded.Image, "Insert Image", false, {
+                    GlassToolButton(Icons.Rounded.AddPhotoAlternate, "Insert Image", false, {
                             imagePicker.launch(PickVisualMediaRequest(mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly))
                         }, enabled = pkg != null && viewModel.editable, accent = accent)
                     GlassToolButton(Icons.Rounded.FormatBold, stringResource(R.string.sheet_bold), bold, { toggle(DocxEdits.Toggle.BOLD, bold) }, enabled = has, accent = accent)

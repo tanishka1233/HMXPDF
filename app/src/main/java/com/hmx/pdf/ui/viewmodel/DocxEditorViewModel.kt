@@ -15,6 +15,7 @@ import com.hmx.pdf.data.repository.RecentFile
 import com.hmx.pdf.data.repository.RecentFilesManager
 import com.hmx.pdf.data.repository.SaveRecovery
 import com.hmx.pdf.docx.DocBlock
+import com.hmx.pdf.docx.DocRaw
 import com.hmx.pdf.docx.CommentInfo
 import com.hmx.pdf.docx.CharFmt
 import com.hmx.pdf.docx.DocIds
