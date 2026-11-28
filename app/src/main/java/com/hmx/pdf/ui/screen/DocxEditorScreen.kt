@@ -1237,7 +1237,7 @@ private fun DocxEditorContent(
                         GlassToolButton(Icons.Rounded.RotateRight, "Rotate right", false, { viewModel.rotateImageRight(sel.paraId, sel.imageIndex) }, accent = accent)
                         GlassToolButton(Icons.Rounded.Crop, "Crop", false, { viewModel.cropImage(sel.paraId, sel.imageIndex, 10f, 10f, 10f, 10f) }, accent = accent)
                         GlassToolButton(Icons.Rounded.AspectRatio, "Resize +", false, { viewModel.resizeImage(sel.paraId, sel.imageIndex, 1.1f) }, accent = accent)
-                        GlassToolButton(Icons.Rounded.Flip, "Flip horizontal", false, { viewModel.flipImageHorizontal(sel.paraId, sel.imageIndex) }, accent = accent)
+                        GlassToolButton(Icons.Rounded.FlipCameraAndroid, "Flip horizontal", false, { viewModel.flipImageHorizontal(sel.paraId, sel.imageIndex) }, accent = accent)
                         GlassToolButton(Icons.Rounded.FlipCameraAndroid, "Flip vertical", false, { viewModel.flipImageVertical(sel.paraId, sel.imageIndex) }, accent = accent)
                         GlassToolButton(Icons.Rounded.FormatAlignLeft, "Align left", false, { viewModel.setImageAlignment(sel.paraId, sel.imageIndex, "left") }, accent = accent)
                         GlassToolButton(Icons.Rounded.FormatAlignCenter, "Align center", false, { viewModel.setImageAlignment(sel.paraId, sel.imageIndex, "center") }, accent = accent)

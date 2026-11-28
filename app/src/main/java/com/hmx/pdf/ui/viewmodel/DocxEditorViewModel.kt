@@ -1723,7 +1723,6 @@ class DocxEditorViewModel : ViewModel() {
         readingEngine = null
         super.onCleared()
     }
-}
 
 // ── DOCX image insertion & editing (Phase 8.2; PDF untouched) ─────────────────
 
@@ -1838,4 +1837,6 @@ private fun defaultImageEmu(w: Int, h: Int): Pair<Long, Long> {
     val wEmu = targetW
     val hEmu = if (w > 0) (h.toLong() * wEmu / w).coerceAtLeast(1L) else wEmu
     return DocxImageOps.clampDimensions(wEmu, hEmu)
+}
+
 }
